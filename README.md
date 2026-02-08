@@ -178,7 +178,7 @@ Picobot uses a single JSON config at `~/.picobot/config.json`:
 }
 ```
 
-Supports **OpenRouter** (cloud) and **Ollama** (local/self-hosted). See [CONFIG.md](CONFIG.md) for full reference.
+Supports **OpenRouter** and **Ollama** . See [CONFIG.md](CONFIG.md) for more details.
 
 ## CLI Reference
 
@@ -245,9 +245,9 @@ docker/               Dockerfile, compose, entrypoint
 - [x] Add Telegram support
 - [ ] Add WhatsApp support
 - [ ] Add Discord support
-- [x] Skill creation by AI agent
-- [ ] Integrate with more useful skills by default
-- [ ] Add more useful tools (email, calendar, file processing, etc.)
+- [x] AI agent with skill creation capability
+- [ ] Integrate additional useful default skills
+- [ ] Add more tools (email, file processing, etc.)
 
 Want to contribute? Open an issue or PR with your ideas!
 
