@@ -195,7 +195,104 @@ picobot memory append today|long -c "" # append to memory
 picobot memory write long -c ""        # overwrite long-term memory
 picobot memory recent --days N         # recent N days
 picobot memory rank -q "query"         # semantic memory search
+picobot swarm orchestrator             # start swarm orchestrator HTTP service
+picobot swarm node                     # start autonomous swarm node
+picobot swarm submit --objective "..." # submit high-order task
 ```
+
+## Swarm Mode (Distributed Multi-Node)
+
+Picobot now has an additive swarm layer on top of the existing single-node flow:
+- `orchestrator`: decomposes a high-order task into a DAG, assigns subtasks to available nodes, retries on node failure/timeouts, and assembles the final result.
+- `node`: runs an independent picobot agent loop with its own workspace/memory/tool access, receives JSON subtasks over HTTP (or stdin one-shot mode), and emits structured artifacts.
+
+Single-node commands (`agent`, `gateway`, `memory`) continue to work unchanged.
+
+### Inter-node Protocol
+
+`POST /v1/nodes/register`:
+
+```json
+{
+  "node_id": "node-a",
+  "endpoint": "http://node-a:8090",
+  "specializations": ["analysis", "generation"],
+  "capacity": 1
+}
+```
+
+`POST /v1/tasks`:
+
+```json
+{
+  "objective": "High-order objective text",
+  "strategy": "deterministic",
+  "graph": {
+    "subtasks": [
+      {
+        "id": "analyze",
+        "type": "analysis",
+        "prompt": "Analyze objective"
+      }
+    ]
+  }
+}
+```
+
+Node output artifact schema (returned by `POST /v1/node/tasks`):
+
+```json
+{
+  "task_id": "task-...",
+  "node_id": "node-a",
+  "subtask_id": "analyze",
+  "result": "...",
+  "confidence": 0.82,
+  "metadata": {
+    "task_type": "analysis"
+  }
+}
+```
+
+### Assembly Strategies
+
+Configurable via `strategy` in task submission:
+- `deterministic`: ordered merge with per-subtask outputs.
+- `majority_vote`: vote over categorical/text outputs.
+- `weighted_average`: confidence-weighted numeric aggregation.
+- `llm_synthesis`: synthesis by configured LLM provider, with deterministic fallback.
+
+All final responses include provenance metadata (`provenance`, `subtask_trace`) for full traceability.
+
+### Docker Compose Swarm
+
+Use the root `docker-compose.yml`:
+
+```sh
+docker compose up -d --build --scale node=${SWARM_NODE_COUNT:-3}
+```
+
+This launches:
+- `orchestrator` on `:8080`
+- `N` independent `node` instances (scale at launch time)
+
+### End-to-End Example (3+ Nodes)
+
+1. Run local example:
+
+```sh
+./examples/swarm/run-local-e2e.sh
+```
+
+2. Or manually submit the sample task:
+
+```sh
+picobot swarm submit \
+  --orchestrator-url http://localhost:8080 \
+  --file examples/swarm/high-order-task.json
+```
+
+The response includes assembled output plus provenance listing exactly which nodes returned each subtask artifact.
 
 ## Run on Minimal Hardware
 
@@ -231,6 +328,7 @@ cmd/picobot/          CLI entry point
 embeds/               Embedded assets (sample skills)
 internal/
   agent/              Agent loop, context, tools, skills
+  swarm/              Orchestrator, node runtime, assembly, protocol
   chat/               Chat message hub
   channels/           Telegram (more coming)
   config/             Config schema, loader, onboarding

@@ -1,0 +1,53 @@
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["swarm", "orchestrator", "--listen", ":8080", "--task-timeout", "45s", "--retries", "3"]
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://openrouter.ai/api/v1}
+      - PICOBOT_MODEL=${PICOBOT_MODEL:-google/gemini-2.5-flash}
+    volumes:
+      - ./swarm-data/orchestrator:/home/picobot/.picobot
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  node:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command:
+      [
+        "swarm",
+        "node",
+        "--listen",
+        ":8090",
+        "--orchestrator-url",
+        "http://orchestrator:8080",
+        "--specializations",
+        "analysis,generation,validation,synthesis",
+        "--capacity",
+        "1"
+      ]
+    restart: unless-stopped
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://openrouter.ai/api/v1}
+      - PICOBOT_MODEL=${PICOBOT_MODEL:-google/gemini-2.5-flash}
+    volumes:
+      - ./swarm-data/nodes:/home/picobot/.picobot
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8090/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10

@@ -1,0 +1,33 @@
+{
+  "task_id": "demo-architecture-task",
+  "objective": "Design a lightweight distributed swarm layer for picobot with retry safety, node autonomy, and traceable result assembly.",
+  "strategy": "deterministic",
+  "timeout_seconds": 45,
+  "graph": {
+    "subtasks": [
+      {
+        "id": "requirements-analysis",
+        "type": "analysis",
+        "prompt": "Extract requirements and constraints from the objective."
+      },
+      {
+        "id": "solution-proposal",
+        "type": "generation",
+        "depends_on": ["requirements-analysis"],
+        "prompt": "Propose the implementation architecture and message protocol."
+      },
+      {
+        "id": "risk-validation",
+        "type": "validation",
+        "depends_on": ["solution-proposal"],
+        "prompt": "Review the proposal for failure modes and operational risks."
+      },
+      {
+        "id": "final-synthesis",
+        "type": "synthesis",
+        "depends_on": ["requirements-analysis", "solution-proposal", "risk-validation"],
+        "prompt": "Synthesize a final response with recommended rollout order."
+      }
+    ]
+  }
+}

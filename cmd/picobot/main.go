@@ -373,6 +373,7 @@ func NewRootCmd() *cobra.Command {
 	memoryCmd.AddCommand(rankCmd)
 
 	rootCmd.AddCommand(memoryCmd)
+	addSwarmCommand(rootCmd)
 	return rootCmd
 }
 
